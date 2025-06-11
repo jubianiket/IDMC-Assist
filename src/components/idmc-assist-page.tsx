@@ -9,9 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, ThumbsUp, ThumbsDown, Info } from "lucide-react";
+import { Loader2, ThumbsUp, ThumbsDown, Info, KeyRound } from "lucide-react";
 import { Logo } from "@/components/icons/logo";
+import { Label } from "@/components/ui/label";
 
 const formSchema = z.object({
   question: z.string().min(10, {
@@ -21,11 +24,20 @@ const formSchema = z.object({
 
 type FeedbackType = "up" | "down" | null;
 
+const modelOptions = [
+  { value: 'googleai/gemini-2.0-flash', label: 'Google Gemini 2.0 Flash' },
+  // { value: 'openai/gpt-4o', label: 'OpenAI GPT-4o' }, // OpenAI temporarily removed
+  // Add more models here if desired. Ensure corresponding plugins are set up.
+];
+
 export default function IdmcAssistPage() {
   const [answer, setAnswer] = useState<AskIdmcQuestionOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackType>(null);
+
+  const [selectedModelId, setSelectedModelId] = useState<string>(modelOptions[0].value);
+  const [apiKey, setApiKey] = useState<string>("");
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -41,7 +53,11 @@ export default function IdmcAssistPage() {
     setFeedback(null);
 
     try {
-      const result = await askIdmcQuestion({ question: values.question });
+      const result = await askIdmcQuestion({ 
+        question: values.question,
+        modelId: selectedModelId,
+        apiKey: apiKey || undefined, // Send undefined if empty
+      });
       setAnswer(result);
     } catch (e) {
       setError(e instanceof Error ? e.message : "An unexpected error occurred.");
@@ -56,7 +72,6 @@ export default function IdmcAssistPage() {
     } else {
       setFeedback(type);
     }
-    // In a real app, you would send this feedback to a server
     console.log(`Feedback received: ${type}`);
   };
 
@@ -73,9 +88,49 @@ export default function IdmcAssistPage() {
 
         <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle className="font-headline">Ask a Question</CardTitle>
+            <CardTitle className="font-headline">Configure & Ask</CardTitle>
           </CardHeader>
           <CardContent>
+            <div className="space-y-4 mb-6">
+              <div>
+                <Label htmlFor="model-select">Select AI Model</Label>
+                <Select value={selectedModelId} onValueChange={setSelectedModelId}>
+                  <SelectTrigger id="model-select">
+                    <SelectValue placeholder="Select a model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {modelOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                 {modelOptions.length === 1 && modelOptions[0].value.startsWith('googleai/') && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    OpenAI models are temporarily unavailable due to package installation issues.
+                  </p>
+                )}
+              </div>
+              <div>
+                <Label htmlFor="api-key">API Key (Optional)</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    id="api-key"
+                    type="password"
+                    placeholder="Enter API key if you want to use your own"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  If left blank, the system will try to use a pre-configured key (if available for the selected model).
+                </p>
+              </div>
+            </div>
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
@@ -154,6 +209,7 @@ export default function IdmcAssistPage() {
           <AlertDescription>
             This AI is a learning assistant. Information provided may not always be accurate or complete.
             Always verify critical information with official Informatica IDMC documentation.
+            Providing API keys is at your own risk.
           </AlertDescription>
         </Alert>
       </main>

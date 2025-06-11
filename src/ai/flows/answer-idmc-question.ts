@@ -3,7 +3,8 @@
 'use server';
 
 /**
- * @fileOverview Provides an AI agent to answer questions about Informatica IDMC.
+ * @fileOverview Provides an AI agent to answer questions about Informatica IDMC,
+ * allowing model selection and dynamic API key usage.
  *
  * - askIdmcQuestion - A function that allows users to ask questions about Informatica IDMC and receive AI-generated answers.
  * - AskIdmcQuestionInput - The input type for the askIdmcQuestion function.
@@ -12,9 +13,12 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import type {Plugin} from 'genkit';
 
 const AskIdmcQuestionInputSchema = z.object({
   question: z.string().describe('The question about Informatica IDMC.'),
+  modelId: z.string().describe("The identifier for the AI model to use (e.g., 'googleai/gemini-2.0-flash')."),
+  apiKey: z.string().optional().describe('Optional API key for the selected model provider.'),
 });
 export type AskIdmcQuestionInput = z.infer<typeof AskIdmcQuestionInputSchema>;
 
@@ -27,14 +31,12 @@ export async function askIdmcQuestion(input: AskIdmcQuestionInput): Promise<AskI
   return askIdmcQuestionFlow(input);
 }
 
-const prompt = ai.definePrompt({
-  name: 'askIdmcQuestionPrompt',
-  input: {schema: AskIdmcQuestionInputSchema},
+// Define the core prompt structure once
+const basePromptConfig = {
+  input: {schema: z.object({ question: z.string() }) },
   output: {schema: AskIdmcQuestionOutputSchema},
-  prompt: `You are an AI assistant that helps users learn Informatica IDMC by answering their questions. Answer the following question:
-
-Question: {{{question}}}`,
-});
+  prompt: `You are an AI assistant that helps users learn Informatica IDMC. Answer the following question:\n\nQuestion: {{{question}}}`,
+};
 
 const askIdmcQuestionFlow = ai.defineFlow(
   {
@@ -42,8 +44,64 @@ const askIdmcQuestionFlow = ai.defineFlow(
     inputSchema: AskIdmcQuestionInputSchema,
     outputSchema: AskIdmcQuestionOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    const { question, modelId, apiKey } = input;
+
+    if (!modelId) {
+        throw new Error('modelId is required.');
+    }
+
+    if (apiKey) {
+      // API key provided, use a temporary, specifically configured Genkit instance for this call
+      const { genkit: localGenkit } = await import('genkit');
+      let tempPlugins: Plugin<any>[] = [];
+
+      if (modelId.startsWith('googleai/')) {
+        const { googleAI } = await import('@genkit-ai/googleai');
+        tempPlugins.push(googleAI({ apiKey }));
+      // OpenAI support temporarily removed due to installation issues
+      // } else if (modelId.startsWith('openai/')) {
+      //   const { openAI } = await import('@genkit-ai/openai');
+      //   tempPlugins.push(openAI({ apiKey }));
+      } else {
+        throw new Error(`Unsupported model provider for modelId: ${modelId}. Only Google AI models are currently supported if providing an API key.`);
+      }
+
+      if (tempPlugins.length === 0) {
+          throw new Error(`No valid plugin could be configured for modelId: ${modelId}`);
+      }
+
+      const tempAi = localGenkit({ plugins: tempPlugins, logLevel: 'warn' });
+      
+      const tempPrompt = tempAi.definePrompt({
+          name: 'askIdmcQuestionTempPrompt', // Unique name for temporary prompt
+          ...basePromptConfig
+      });
+
+      const { output } = await tempPrompt(
+          { question },
+          { model: modelId }
+      );
+      return output!;
+
+    } else {
+      // No API key provided, use the global `ai` instance.
+      // Assumes global `ai` has plugins configured to pick up keys from .env
+      // Note: OpenAI models will not work here if the OpenAI plugin is not globally configured in src/ai/genkit.ts
+      if (modelId.startsWith('openai/')) {
+        throw new Error('OpenAI models are temporarily unavailable. Please select a Google AI model or try again later once OpenAI package issues are resolved.');
+      }
+
+      const globalPrompt = ai.definePrompt({
+        name: 'askIdmcQuestionGlobalPrompt', 
+        ...basePromptConfig
+      });
+
+      const { output } = await globalPrompt(
+        { question },
+        { model: modelId } // Specify the model selected by the user
+      );
+      return output!;
+    }
   }
 );
