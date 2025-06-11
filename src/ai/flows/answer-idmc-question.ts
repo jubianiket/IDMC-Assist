@@ -59,12 +59,13 @@ const askIdmcQuestionFlow = ai.defineFlow(
       if (modelId.startsWith('googleai/')) {
         const { googleAI } = await import('@genkit-ai/googleai');
         tempPlugins.push(googleAI({ apiKey }));
-      // OpenAI support temporarily removed due to installation issues
-      // } else if (modelId.startsWith('openai/')) {
-      //   const { openAI } = await import('@genkit-ai/openai');
-      //   tempPlugins.push(openAI({ apiKey }));
+      } else if (modelId.startsWith('openai/')) {
+        // Temporarily disable OpenAI due to installation issues
+        throw new Error('OpenAI models are temporarily unavailable due to a configuration issue. Please select a Google AI model.');
+        // const { openAI } = await import('@genkit-ai/openai'); // This line causes issues if @genkit-ai/openai is not installed
+        // tempPlugins.push(openAI({ apiKey }));
       } else {
-        throw new Error(`Unsupported model provider for modelId: ${modelId}. Only Google AI models are currently supported if providing an API key.`);
+        throw new Error(`Unsupported model provider for modelId: ${modelId}. Supported providers: googleai/.`);
       }
 
       if (tempPlugins.length === 0) {
@@ -87,9 +88,10 @@ const askIdmcQuestionFlow = ai.defineFlow(
     } else {
       // No API key provided, use the global `ai` instance.
       // Assumes global `ai` has plugins configured to pick up keys from .env
-      // Note: OpenAI models will not work here if the OpenAI plugin is not globally configured in src/ai/genkit.ts
+      
+      // Temporarily restrict to Google AI if OpenAI plugin isn't globally configured due to install issues
       if (modelId.startsWith('openai/')) {
-        throw new Error('OpenAI models are temporarily unavailable. Please select a Google AI model or try again later once OpenAI package issues are resolved.');
+        throw new Error('OpenAI models are temporarily unavailable. Please select a Google AI model or provide an API key for a Google model if the global key is not working.');
       }
 
       const globalPrompt = ai.definePrompt({

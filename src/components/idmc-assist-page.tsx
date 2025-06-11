@@ -26,8 +26,7 @@ type FeedbackType = "up" | "down" | null;
 
 const modelOptions = [
   { value: 'googleai/gemini-2.0-flash', label: 'Google Gemini 2.0 Flash' },
-  // { value: 'openai/gpt-4o', label: 'OpenAI GPT-4o' }, // OpenAI temporarily removed
-  // Add more models here if desired. Ensure corresponding plugins are set up.
+  // { value: 'openai/gpt-4o', label: 'OpenAI GPT-4o' }, // Temporarily removed due to installation issues
 ];
 
 export default function IdmcAssistPage() {
@@ -108,7 +107,7 @@ export default function IdmcAssistPage() {
                 </Select>
                  {modelOptions.length === 1 && modelOptions[0].value.startsWith('googleai/') && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    OpenAI models are temporarily unavailable due to package installation issues.
+                    OpenAI models are temporarily unavailable due to a setup issue.
                   </p>
                 )}
               </div>
