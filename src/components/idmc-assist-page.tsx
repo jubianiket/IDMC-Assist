@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, ThumbsUp, ThumbsDown, Info, KeyRound, Sparkles } from "lucide-react";
+import { Loader2, ThumbsUp, ThumbsDown, Info, KeyRound, Sparkles, ShieldAlert } from "lucide-react";
 import { Logo } from "@/components/icons/logo";
 import { Label } from "@/components/ui/label";
 
@@ -27,8 +27,10 @@ type FeedbackType = "up" | "down" | null;
 
 const modelOptions = [
   { value: 'googleai/gemini-2.0-flash', label: 'Gemini 2.0 Flash (Fastest)' },
+  { value: 'googleai/gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash-Lite' },
   { value: 'googleai/gemini-1.5-pro', label: 'Gemini 1.5 Pro (Most Accurate)' },
   { value: 'googleai/gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+  { value: 'googleai/gemini-1.5-flash-8b', label: 'Gemini 1.5 Flash-8B' },
 ];
 
 export default function IdmcAssistPage() {
@@ -200,14 +202,23 @@ export default function IdmcAssistPage() {
           </Card>
         )}
 
-        <Alert className="shadow-md bg-muted/30 border-none">
-          <Info className="h-4 w-4 text-primary" />
-          <AlertTitle className="font-headline text-sm">AI Learning Assistant Notice</AlertTitle>
-          <AlertDescription className="text-xs">
-            OpenAI models are temporarily disabled due to registry issues in your environment. Please use the available Gemini models. 
-            Information provided may not always be accurate. Verify with official Informatica documentation.
-          </AlertDescription>
-        </Alert>
+        <div className="space-y-4">
+          <Alert className="shadow-md bg-muted/30 border-none">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertTitle className="font-headline text-sm">Notice</AlertTitle>
+            <AlertDescription className="text-xs">
+              This application is currently optimized for Google Gemini models. Other providers (OpenAI, ChatGPT) are temporarily unavailable due to registry restrictions in your environment.
+            </AlertDescription>
+          </Alert>
+
+          <Alert variant="destructive" className="shadow-sm border-destructive/20 bg-destructive/5">
+            <ShieldAlert className="h-4 w-4" />
+            <AlertTitle className="text-xs font-semibold uppercase tracking-wider">Troubleshooting Note</AlertTitle>
+            <AlertDescription className="text-xs opacity-80">
+              If you see "Module not found" errors during build, please ensure your npm registry access is not restricted and try clearing your cache with <code>npm cache clean --force</code>.
+            </AlertDescription>
+          </Alert>
+        </div>
       </main>
     </div>
   );
