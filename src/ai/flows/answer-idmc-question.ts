@@ -11,8 +11,8 @@ import {z} from 'genkit';
 
 const AskIdmcQuestionInputSchema = z.object({
   question: z.string().describe('The question about Informatica IDMC.'),
-  modelId: z.string().describe("The identifier for the Google AI model to use (e.g., 'googleai/gemini-2.0-flash')."),
-  apiKey: z.string().optional().describe('Optional API key for Google AI.'),
+  modelId: z.string().describe("The identifier for the AI model to use (e.g., 'googleai/gemini-2.0-flash')."),
+  apiKey: z.string().optional().describe('Optional API key for the selected AI provider.'),
 });
 export type AskIdmcQuestionInput = z.infer<typeof AskIdmcQuestionInputSchema>;
 
@@ -45,7 +45,7 @@ const askIdmcQuestionFlow = ai.defineFlow(
     }
 
     // If a custom API key is provided, use a local instance to apply it
-    if (apiKey && modelId.startsWith('googleai/')) {
+    if (apiKey) {
       const { genkit: localGenkit } = await import('genkit');
       const { googleAI } = await import('@genkit-ai/googleai');
       
@@ -66,7 +66,7 @@ const askIdmcQuestionFlow = ai.defineFlow(
       return output!;
 
     } else {
-      // Use the global AI instance (uses GEMINI_API_KEY environment variable)
+      // Use the global AI instance (uses environment variables like GEMINI_API_KEY)
       const globalPrompt = ai.definePrompt({
         name: 'askIdmcQuestionGlobalPrompt', 
         ...basePromptConfig

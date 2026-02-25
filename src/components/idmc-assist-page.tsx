@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, ThumbsUp, ThumbsDown, Info, KeyRound, Sparkles, ShieldAlert } from "lucide-react";
+import { Loader2, ThumbsUp, ThumbsDown, Info, KeyRound, Sparkles, ShieldAlert, AlertTriangle } from "lucide-react";
 import { Logo } from "@/components/icons/logo";
 import { Label } from "@/components/ui/label";
 
@@ -29,8 +29,6 @@ const modelOptions = [
   { value: 'googleai/gemini-2.0-flash', label: 'Gemini 2.0 Flash (Fastest)' },
   { value: 'googleai/gemini-2.0-flash-lite', label: 'Gemini 2.0 Flash-Lite' },
   { value: 'googleai/gemini-1.5-pro', label: 'Gemini 1.5 Pro (Most Accurate)' },
-  { value: 'googleai/gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
-  { value: 'googleai/gemini-1.5-flash-8b', label: 'Gemini 1.5 Flash-8B' },
 ];
 
 export default function IdmcAssistPage() {
@@ -63,7 +61,12 @@ export default function IdmcAssistPage() {
       });
       setAnswer(result);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "An unexpected error occurred.");
+      const errorMsg = e instanceof Error ? e.message : "An unexpected error occurred.";
+      if (errorMsg.includes("429") || errorMsg.includes("quota")) {
+        setError("Quota exceeded! Please provide your own Gemini API key in the field above to continue using this service.");
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -109,18 +112,23 @@ export default function IdmcAssistPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="api-key">Gemini API Key (Optional)</Label>
+                <Label htmlFor="api-key" className="text-primary font-semibold">
+                  Personal Gemini API Key
+                </Label>
                 <div className="relative">
-                  <KeyRound className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <KeyRound className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-primary" />
                   <Input
                     id="api-key"
                     type="password"
-                    placeholder="Enter Google AI API key"
+                    placeholder="Enter your API key to bypass quota"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
-                    className="pl-8"
+                    className="pl-8 border-primary/30 focus-visible:ring-primary"
                   />
                 </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Get a free key from <a href="https://aistudio.google.com/" target="_blank" className="underline text-primary">Google AI Studio</a>.
+                </p>
               </div>
             </div>
 
@@ -160,7 +168,8 @@ export default function IdmcAssistPage() {
 
         {error && (
           <Alert variant="destructive" className="shadow-md animate-in fade-in slide-in-from-top-4">
-            <AlertTitle>Error</AlertTitle>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error Encountered</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -207,7 +216,7 @@ export default function IdmcAssistPage() {
             <Info className="h-4 w-4 text-primary" />
             <AlertTitle className="font-headline text-sm">Notice</AlertTitle>
             <AlertDescription className="text-xs">
-              This application is currently optimized for Google Gemini models. Other providers (OpenAI, ChatGPT) are temporarily unavailable due to registry restrictions in your environment.
+              To resolve 429 errors, please provide your own API key. Non-Gemini models (like OpenAI) are currently unavailable due to package registry restrictions in your environment.
             </AlertDescription>
           </Alert>
 
@@ -215,7 +224,7 @@ export default function IdmcAssistPage() {
             <ShieldAlert className="h-4 w-4" />
             <AlertTitle className="text-xs font-semibold uppercase tracking-wider">Troubleshooting Note</AlertTitle>
             <AlertDescription className="text-xs opacity-80">
-              If you see "Module not found" errors during build, please ensure your npm registry access is not restricted and try clearing your cache with <code>npm cache clean --force</code>.
+              The <code>@genkit-ai/openai</code> package cannot be installed on your current network/registry. We have focused on providing the best possible Gemini experience to ensure your app remains functional.
             </AlertDescription>
           </Alert>
         </div>
