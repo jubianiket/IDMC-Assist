@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, ThumbsUp, ThumbsDown, Info, KeyRound } from "lucide-react";
+import { Loader2, ThumbsUp, ThumbsDown, Info, KeyRound, Sparkles } from "lucide-react";
 import { Logo } from "@/components/icons/logo";
 import { Label } from "@/components/ui/label";
 
@@ -25,8 +26,9 @@ const formSchema = z.object({
 type FeedbackType = "up" | "down" | null;
 
 const modelOptions = [
-  { value: 'googleai/gemini-2.0-flash', label: 'Google Gemini 2.0 Flash' },
-  // { value: 'openai/gpt-4o', label: 'OpenAI GPT-4o' }, // Temporarily removed due to installation issues
+  { value: 'googleai/gemini-2.0-flash', label: 'Gemini 2.0 Flash (Fastest)' },
+  { value: 'googleai/gemini-1.5-pro', label: 'Gemini 1.5 Pro (Most Accurate)' },
+  { value: 'googleai/gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
 ];
 
 export default function IdmcAssistPage() {
@@ -55,7 +57,7 @@ export default function IdmcAssistPage() {
       const result = await askIdmcQuestion({ 
         question: values.question,
         modelId: selectedModelId,
-        apiKey: apiKey || undefined, // Send undefined if empty
+        apiKey: apiKey || undefined,
       });
       setAnswer(result);
     } catch (e) {
@@ -66,12 +68,7 @@ export default function IdmcAssistPage() {
   }
 
   const handleFeedback = (type: "up" | "down") => {
-    if (feedback === type) {
-      setFeedback(null);
-    } else {
-      setFeedback(type);
-    }
-    console.log(`Feedback received: ${type}`);
+    setFeedback(feedback === type ? null : type);
   };
 
   return (
@@ -85,13 +82,16 @@ export default function IdmcAssistPage() {
           </p>
         </header>
 
-        <Card className="shadow-lg">
+        <Card className="shadow-lg border-primary/10">
           <CardHeader>
-            <CardTitle className="font-headline">Configure & Ask</CardTitle>
+            <CardTitle className="font-headline flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Configure & Ask
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4 mb-6">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              <div className="space-y-2">
                 <Label htmlFor="model-select">Select AI Model</Label>
                 <Select value={selectedModelId} onValueChange={setSelectedModelId}>
                   <SelectTrigger id="model-select">
@@ -105,28 +105,20 @@ export default function IdmcAssistPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                 {modelOptions.length === 1 && modelOptions[0].value.startsWith('googleai/') && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    OpenAI models are temporarily unavailable due to a setup issue.
-                  </p>
-                )}
               </div>
-              <div>
-                <Label htmlFor="api-key">API Key (Optional)</Label>
+              <div className="space-y-2">
+                <Label htmlFor="api-key">Gemini API Key (Optional)</Label>
                 <div className="relative">
                   <KeyRound className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="api-key"
                     type="password"
-                    placeholder="Enter API key if you want to use your own"
+                    placeholder="Enter Google AI API key"
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
                     className="pl-8"
                   />
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  If left blank, the system will try to use a pre-configured key (if available for the selected model).
-                </p>
               </div>
             </div>
 
@@ -141,7 +133,7 @@ export default function IdmcAssistPage() {
                       <FormControl>
                         <Textarea
                           placeholder="e.g., How do I configure a mapping in IDMC?"
-                          className="min-h-[100px] resize-none"
+                          className="min-h-[120px] resize-none focus-visible:ring-primary"
                           {...field}
                         />
                       </FormControl>
@@ -149,14 +141,14 @@ export default function IdmcAssistPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" disabled={isLoading} className="w-full bg-primary hover:bg-primary/90">
+                <Button type="submit" disabled={isLoading} className="w-full h-12 text-lg transition-all hover:scale-[1.01]">
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Getting Answer...
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Consulting AI...
                     </>
                   ) : (
-                    "Ask AI"
+                    "Ask AI Assistant"
                   )}
                 </Button>
               </form>
@@ -165,26 +157,32 @@ export default function IdmcAssistPage() {
         </Card>
 
         {error && (
-          <Alert variant="destructive" className="shadow-md">
+          <Alert variant="destructive" className="shadow-md animate-in fade-in slide-in-from-top-4">
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
 
         {answer && (
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle className="font-headline">AI Response</CardTitle>
+          <Card className="shadow-lg border-accent/20 animate-in fade-in slide-in-from-bottom-4">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-center">
+                <CardTitle className="font-headline text-lg">AI Response</CardTitle>
+                <div className="text-xs bg-muted px-2 py-1 rounded-full text-muted-foreground">
+                  Model: {selectedModelId}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <p className="whitespace-pre-wrap text-foreground">{answer.answer}</p>
+              <p className="whitespace-pre-wrap text-foreground font-body leading-relaxed">{answer.answer}</p>
             </CardContent>
-            <CardFooter className="flex justify-end space-x-2">
+            <CardFooter className="flex justify-end space-x-2 pt-2">
+              <span className="text-xs text-muted-foreground self-center mr-2 italic">Was this helpful?</span>
               <Button
                 variant={feedback === "up" ? "default" : "outline"}
                 size="icon"
                 onClick={() => handleFeedback("up")}
-                className={feedback === "up" ? "bg-accent text-accent-foreground hover:bg-accent/90" : ""}
+                className={feedback === "up" ? "bg-accent text-accent-foreground" : "h-8 w-8"}
                 aria-label="Helpful"
               >
                 <ThumbsUp className="h-4 w-4" />
@@ -193,7 +191,7 @@ export default function IdmcAssistPage() {
                 variant={feedback === "down" ? "default" : "outline"}
                 size="icon"
                 onClick={() => handleFeedback("down")}
-                className={feedback === "down" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+                className={feedback === "down" ? "bg-destructive text-destructive-foreground" : "h-8 w-8"}
                 aria-label="Not helpful"
               >
                 <ThumbsDown className="h-4 w-4" />
@@ -202,13 +200,12 @@ export default function IdmcAssistPage() {
           </Card>
         )}
 
-        <Alert className="shadow-md">
+        <Alert className="shadow-md bg-muted/30 border-none">
           <Info className="h-4 w-4 text-primary" />
-          <AlertTitle className="font-headline">Disclaimer</AlertTitle>
-          <AlertDescription>
-            This AI is a learning assistant. Information provided may not always be accurate or complete.
-            Always verify critical information with official Informatica IDMC documentation.
-            Providing API keys is at your own risk.
+          <AlertTitle className="font-headline text-sm">AI Learning Assistant Notice</AlertTitle>
+          <AlertDescription className="text-xs">
+            OpenAI models are temporarily disabled due to registry issues in your environment. Please use the available Gemini models. 
+            Information provided may not always be accurate. Verify with official Informatica documentation.
           </AlertDescription>
         </Alert>
       </main>
